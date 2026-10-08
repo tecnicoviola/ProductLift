@@ -724,3 +724,23 @@ Each feature is independently verifiable and builds upon the previous ones. The 
 - Search uses case-insensitive regex, filters build mongoose query, sort and pagination supported
 
 The final application will be production-ready with proper authentication, authorization, data validation, error handling, and a polished user experience.
+
+## PLAN AMENDMENTS (override anything above that conflicts)
+- Roadmap: separate routes/roadmapRoutes.js mounted at /api/roadmap (not under /api/posts).
+- authOptional: missing OR invalid/expired token => continue as anonymous, never 401.
+- Axios 401 interceptor: only clear token and redirect if a token existed and the URL is not /auth/*.
+- createPost: pick only title, description, category from req.body.
+- Seed: 1 admin + 2 regular users, 12 posts spread across them, real Vote documents, voteCount computed from them.
+- toggleVote: use Vote.findOneAndDelete; decrement voteCount only if a vote was actually deleted; increment only after Vote.create succeeds; on duplicate key error (11000) return current state without changing the count.
+- hasVoted: single query with $in, not one query per post.
+- Search: escape regex special characters; whitelist sort/category/status values.
+- Sort "top": { voteCount: -1, createdAt: -1 }. Default pagination limit 6.
+- CORS: origin from CLIENT_URL env var. Add CLIENT_URL to .env.example.
+- User.password: select: false.
+- Add root .gitignore (node_modules, .env, dist) and a 404 notFound middleware.
+- Tailwind v3 only (tailwindcss@3). BrowserRouter wraps AuthProvider.
+- VoteButton: if no logged-in user, navigate to /login without calling the API; sync local state from props.
+- PostDetail: show Delete for post author OR admin.
+- README: Node 18+.
+- authController.login must use .select('+password') because User.password is select:false.
+- Never commit server/.env or client/.env. Only the .env.example files go in Git.
