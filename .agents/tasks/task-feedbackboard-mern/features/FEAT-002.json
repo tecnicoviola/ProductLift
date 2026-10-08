@@ -1,0 +1,52 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Complete Posts and Voting API: GET /api/posts with filtering/sorting/pagination/hasVoted, POST/PUT/DELETE posts with authorization, PATCH status (admin only), POST vote toggle endpoint, GET /api/roadmap grouped by status",
+  "status": "pending",
+  "steps": [
+    "1. Create server/controllers/postController.js - getPosts: parse query params (sort=top|newest, category, status, search, page=1, limit=10). Build mongoose query with filters. If search provided, use $or on title/description with $regex case-insensitive. Sort by voteCount desc (top) or createdAt desc (newest). Paginate with skip/limit. Populate author (name, email). If req.user exists (authenticated), for each post query Vote collection to check if vote exists by this user for this post, set hasVoted boolean. Return { success: true, posts, page, pages: Math.ceil(total/limit), total }",
+    "2. In postController.js - getPost: find by ID, populate author (name, email), if req.user check Vote for hasVoted, return post or 404",
+    "3. In postController.js - createPost: validate req.body (title, description, category), create post with author=req.user._id, status='open', voteCount=0, return 201 with post",
+    "4. In postController.js - updatePost: find post by ID, check author matches req.user._id (403 if not), update title/description/category only (not status, voteCount, author, adminReply), return updated post or 404",
+    "5. In postController.js - deletePost: find post by ID, check author matches req.user._id OR req.user.role === 'admin' (403 if neither), delete all votes for this post (await Vote.deleteMany({ post: postId })), delete post, return 200 { success: true, message: 'Post deleted' }",
+    "6. In postController.js - updateStatus: admin only (middleware enforces), find post by ID, update status from req.body.status (validate enum), optionally update adminReply from req.body.adminReply, return updated post or 404",
+    "7. In postController.js - getRoadmap: query posts where status in ['planned', 'in-progress', 'shipped'], populate author (name), group results by status into object { planned: [], inProgress: [], shipped: [] }, sort each group by createdAt desc, return { success: true, roadmap: { planned, inProgress, shipped } }",
+    "8. Create server/controllers/voteController.js - toggleVote: extract postId from req.params.id and userId from req.user._id. Check if post exists (404 if not). Try to find existing vote with { user: userId, post: postId }. If vote exists: delete it, Post.findByIdAndUpdate with $inc: { voteCount: -1 }, return { success: true, message: 'Vote removed', voted: false, voteCount: updatedPost.voteCount }. If vote does not exist: create vote, use try-catch to handle duplicate key error (E11000), Post.findByIdAndUpdate with $inc: { voteCount: 1 }, return { success: true, message: 'Vote added', voted: true, voteCount: updatedPost.voteCount }. If duplicate key error caught, fetch current post and return current vote state",
+    "9. Create server/routes/postRoutes.js - GET / (public, but pass auth middleware with optional flag or check req.headers in controller), GET /:id (public), POST / (auth, postValidation), PUT /:id (auth, postValidation), DELETE /:id (auth), PATCH /:id/status (auth, adminOnly, statusValidation), POST /:id/vote (auth), GET /roadmap (public)",
+    "10. Update server/server.js to mount postRoutes at /api/posts",
+    "11. Update server/middleware/auth.js to support optional authentication: add a second export authOptional that does not return 401 if no token, but still attaches req.user if valid token present (used for getPosts to compute hasVoted for authenticated users)"
+  ],
+  "acceptance_criteria": [
+    "GET /api/posts returns paginated posts with correct filtering, sorting, and hasVoted field when authenticated",
+    "GET /api/posts?sort=top returns posts ordered by voteCount desc",
+    "GET /api/posts?category=feature&status=open filters correctly",
+    "GET /api/posts?search=keyword searches title and description",
+    "GET /api/posts/:id returns single post with hasVoted",
+    "POST /api/posts creates post as authenticated user, returns 201",
+    "PUT /api/posts/:id updates post only if user is author, returns 403 otherwise",
+    "DELETE /api/posts/:id deletes post and all its votes if user is author or admin",
+    "PATCH /api/posts/:id/status updates status and adminReply only for admins, returns 403 for non-admins",
+    "POST /api/posts/:id/vote toggles vote: adds if none, removes if exists, updates voteCount, handles duplicate gracefully",
+    "GET /api/roadmap returns posts grouped by planned, in-progress, shipped"
+  ],
+  "verification": [
+    "Start server with 'npm run dev' in server directory",
+    "Test GET /api/posts - should return paginated posts",
+    "Test GET /api/posts?sort=top - verify order by voteCount",
+    "Test GET /api/posts?category=feature&status=open - verify filtering",
+    "Test GET /api/posts?search=test - verify search works",
+    "Login as regular user, get token",
+    "Test POST /api/posts with token - should create post authored by that user",
+    "Test PUT /api/posts/:id with token - should update own post, fail for others' posts",
+    "Test DELETE /api/posts/:id - should delete own post",
+    "Login as admin, get token",
+    "Test PATCH /api/posts/:id/status with admin token - should update status and adminReply",
+    "Test same endpoint with regular user token - should return 403",
+    "Test POST /api/posts/:id/vote - should add vote and increment count",
+    "Test same endpoint again - should remove vote and decrement count",
+    "Test GET /api/roadmap - should return grouped posts",
+    "Verify hasVoted is true for voted posts when authenticated, absent when not authenticated"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

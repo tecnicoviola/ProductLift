@@ -1,0 +1,13 @@
+{
+  "task_id": "task-feedbackboard-mern",
+  "task_description": "Build a complete MERN stack feedback and roadmap board application with JWT auth, user voting, admin status management, and roadmap visualization",
+  "status": "pending",
+  "feature_order": [
+    "FEAT-001",
+    "FEAT-002",
+    "FEAT-003",
+    "FEAT-004",
+    "FEAT-005"
+  ],
+  "blocked_reason": null
+}

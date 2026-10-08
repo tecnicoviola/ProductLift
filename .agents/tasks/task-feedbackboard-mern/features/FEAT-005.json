@@ -1,0 +1,45 @@
+{
+  "id": "FEAT-005",
+  "type": "docs",
+  "description": "Complete Roadmap page visualization with three-column layout (Planned, In Progress, Shipped), final integration testing across all features, comprehensive README.md with setup instructions and AI Development Experience section, final polish and bug fixes",
+  "status": "pending",
+  "steps": [
+    "1. Create client/src/pages/Roadmap.jsx - State: roadmap object { planned: [], inProgress: [], shipped: [] }, loading, error. On mount: fetch GET /api/roadmap. Render three-column layout (responsive: stacked on mobile, side-by-side on desktop). Each column: heading (Planned, In Progress, Shipped), map posts to PostCard components (simplified version without vote button or with read-only count). Style with Tailwind grid or flexbox, background colors to distinguish columns, min-height to prevent empty columns collapsing",
+    "2. Update client/src/App.jsx to include route /roadmap for Roadmap page (public route)",
+    "3. Create README.md in project root - Sections: Project Title and Description (FeedbackBoard - feedback and roadmap board for feature requests, built with MERN stack), Features list (user registration/login, JWT auth, create/edit/delete posts, upvote posts with optimistic UI, search and filter posts, admin status management with replies, roadmap visualization, responsive design), Tech Stack (MongoDB, Express, React with Vite, Node.js, JWT, bcrypt, Tailwind CSS, React Router, Axios), Prerequisites (Node.js 14+, MongoDB 4+), Installation (clone repo, install server deps, install client deps, setup .env files for both server and client with examples), Database Setup (start MongoDB locally or use Atlas, run seed script), Running the Application (start backend server on port 5000, start frontend on port 5173, access at http://localhost:5173), Default Admin Account (email: admin@feedbackboard.com, password: Admin123!), Project Structure (describe /server and /client directories with subdirectories), API Endpoints Summary (list all routes with brief descriptions), Future Enhancements (optional section: real-time updates with Socket.io, email notifications, image uploads, analytics dashboard), AI Development Experience (placeholder section explaining this was built with AI assistance, describe the experience, challenges, and learnings - to be filled by user or AI based on actual development)",
+    "4. Final integration testing - Start fresh: drop DB collections, run seed script, start backend, start frontend. Test complete user journey: register new user, login, browse posts, search, filter, sort, paginate, vote on posts (verify optimistic UI), create new post, edit own post, delete own post, logout. Login as admin, change post status with admin reply, verify it appears on post detail and roadmap. View roadmap, verify posts in correct columns. Test edge cases: vote toggle multiple times, invalid token (manually corrupt localStorage token, verify redirect to login), unauthorized actions (try to edit another user's post, try admin endpoint as regular user), validation errors (submit forms with invalid data), responsive design on different screen sizes",
+    "5. Bug fixes and polish - Address any issues found during integration testing. Ensure all error messages are user-friendly. Verify all loading states work correctly. Check for console errors or warnings. Ensure all forms have proper validation feedback. Verify vote count accuracy after multiple toggles. Confirm JWT persistence across page refreshes. Test navigation between all pages. Ensure admin controls only visible to admins. Verify post author controls only visible to authors. Check responsive design on mobile, tablet, desktop breakpoints",
+    "6. Code cleanup - Remove any console.logs used for debugging. Ensure all files have consistent formatting. Add comments to non-obvious logic (vote toggle with rollback, hasVoted computation, compound unique index handling). Verify .env.example files are complete. Ensure all imports are used. Check for any TODO comments and resolve or remove them",
+    "7. Final verification - Run through all acceptance criteria from previous FEATs. Verify backend: all endpoints return correct status codes, error format is consistent, auth middleware works, admin middleware works, validation works, vote toggle handles duplicate key error, hasVoted computed correctly, roadmap groups posts correctly. Verify frontend: all pages render, all components styled, auth flow works, protected routes redirect, optimistic voting works with rollback, search/filter/sort/pagination work, admin controls conditional, responsive design works"
+  ],
+  "acceptance_criteria": [
+    "Roadmap page displays posts in three columns: Planned, In Progress, Shipped",
+    "Roadmap layout is responsive (stacked on mobile, columns on desktop)",
+    "README.md contains all required sections with clear setup instructions",
+    "Fresh installation works: clone, npm install, seed, run - user can immediately test the app",
+    "Complete user journey works without errors: register, login, CRUD posts, vote, view roadmap, admin actions",
+    "All edge cases handled gracefully: invalid tokens, unauthorized actions, validation errors",
+    "No console errors or warnings in browser or terminal",
+    "Code is clean, well-commented, and beginner-readable",
+    "Both .env.example files are complete and accurate",
+    "Application matches all requirements from original spec"
+  ],
+  "verification": [
+    "Drop database collections or use fresh DB",
+    "Run 'cd server && npm run seed'",
+    "Start backend: 'cd server && npm run dev'",
+    "Start frontend: 'cd client && npm run dev'",
+    "Open http://localhost:5173/roadmap - should show three columns with posts from seed data",
+    "Navigate between home and roadmap - verify both pages work",
+    "Test complete user flow: register → login → create post → vote on posts → view roadmap → logout",
+    "Test admin flow: login as admin@feedbackboard.com / Admin123! → view post detail → change status to 'planned' with admin reply → save → verify post appears in Planned column on roadmap",
+    "Test edge cases: corrupt token in localStorage (manually edit) → visit protected route → should redirect to login. Try to edit another user's post → should fail. Submit invalid form data → should show validation errors",
+    "Test responsive design: resize browser to mobile width → verify navbar menu, filter bar, roadmap columns stack correctly",
+    "Check browser console for errors - should be none",
+    "Check terminal for backend errors - should be none except intentional validation failures",
+    "Read README.md - follow setup instructions on a fresh checkout to verify completeness",
+    "Verify all features from original requirements are implemented and working"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
