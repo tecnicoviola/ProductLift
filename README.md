@@ -252,11 +252,11 @@ The API was verified with Postman against these scenarios: health check, validat
 
 | # | Task | What I asked the AI to do | Problem I found and how I fixed it |
 | --- | --- | --- | --- |
-| 1 | Initial project and agent setup | _[describe what you asked Kiro to do and what it created in `.agents`]_ | _[describe an issue you found and your fix]_ |
-| 2 | Backend implementation | _[for example: routes, controllers or models you generated with Kiro]_ | _[issue and fix]_ |
-| 3 | Database and API integration | _[for example: Mongoose queries, connecting the client to the API]_ | _[issue and fix]_ |
-| 4 | Frontend components | _[for example: board, roadmap, admin dashboard, theme toggle]_ | _[issue and fix]_ |
-| 5 | Debugging and refactoring | _[for example: an error you pasted into Kiro and what changed]_ | _[issue and fix]_ |
+| 1 | Initial project and agent setup | _[ used Kiro during the initial setup of ProductLift to help establish the project structure and create the .agents folder for organizing AI-assisted development workflows.]_ | _[ reviewed the generated project structure and checked that the files and folders matched the requirements of the application. I adjusted the structure where needed as development progressed.]_ |
+| 2 | Backend implementation | _[I have made the structure of the code I used AI assistance during backend development to help implement the codes of application's routes, controllers, and Mongoose models for users, feedback posts, and votes.]_ | _[ checked that the routes, controllers, and models worked together correctly. When an API operation did not behave as expected, I traced the request flow and verified the route, middleware, controller logic, and database operation.]_ |
+| 3 | Database and API integration | _[I connect the backend to MongoDB and implement API operations for retrieving feedback posts, I used AI for submitting feedback, voting, and retrieving roadmap data.]_ | _[I tested the API integration and verified that feedback data loaded from MongoDB. I also checked that creating feedback required authentication and that the frontend displayed the returned data correctly.]_ |
+| 4 | Frontend components | _[I used Kiro to develop and refine React components for the feedback board, roadmap page, login flow, admin dashboard, protected routes, and theme toggle.]_ | _[I tested the navigation and user flows, including protected pages and admin functionality. I verified that admin status updates and replies were reflected on the feedback board and checked that category filtering worked.]_ |
+| 5 | Debugging and refactoring | _[I used Kiro to investigate errors, understand TypeScript, and refine code across the React frontend and Express backend.]_ | _[I ran the relevant checks, examined error messages, and tested the affected functionality after changes. I used the results to identify integration issues and verify that the application continued to work as expected.]_ |
 
 ### How I worked with the AI
 
