@@ -1,29 +1,24 @@
 const Post = require('../models/Post');
 const Vote = require('../models/Vote');
 
-// Whitelist for sort, category, and status values
+// Whitelists for query values
 const VALID_SORTS = ['top', 'newest'];
 const VALID_CATEGORIES = ['feature', 'bug', 'improvement'];
 const VALID_STATUSES = ['open', 'planned', 'in-progress', 'shipped'];
 
-// Escape regex special characters for safe search
-const escapeRegex = (str) => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-};
+// Escape regex special characters so user input is treated as plain text
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// GET /api/posts - Get posts with filtering, sorting, pagination, and hasVoted
+// GET /api/posts - filtering, sorting, pagination, and hasVoted
 exports.getPosts = async (req, res, next) => {
   try {
-    const {
-      sort = 'newest',
-      category,
-      status,
-      search,
-      page = 1,
-      limit = 6,
-    } = req.query;
+    const { sort = 'newest', category, status, search } = req.query;
 
-    // Validate and whitelist sort
+    // Safe pagination: fall back to defaults for bad values, cap the limit at 50
+    const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 6));
+    const skip = (pageNum - 1) * limitNum;
+
     if (!VALID_SORTS.includes(sort)) {
       return res.status(400).json({
         success: false,
@@ -31,10 +26,8 @@ exports.getPosts = async (req, res, next) => {
       });
     }
 
-    // Build query filter
     const filter = {};
 
-    // Validate and add category filter
     if (category) {
       if (!VALID_CATEGORIES.includes(category)) {
         return res.status(400).json({
@@ -45,7 +38,6 @@ exports.getPosts = async (req, res, next) => {
       filter.category = category;
     }
 
-    // Validate and add status filter
     if (status) {
       if (!VALID_STATUSES.includes(status)) {
         return res.status(400).json({
@@ -56,8 +48,8 @@ exports.getPosts = async (req, res, next) => {
       filter.status = status;
     }
 
-    // Add search filter with escaped regex
-    if (search) {
+    // Only accept a single text value for search
+    if (search && typeof search === 'string') {
       const escapedSearch = escapeRegex(search);
       filter.$or = [
         { title: { $regex: escapedSearch, $options: 'i' } },
@@ -65,47 +57,37 @@ exports.getPosts = async (req, res, next) => {
       ];
     }
 
-    // Determine sort object
+    // "top" = most votes first; ties broken by newest so pagination stays stable
     const sortObj = sort === 'top' ? { voteCount: -1, createdAt: -1 } : { createdAt: -1 };
 
-    // Calculate pagination
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.max(1, parseInt(limit));
-    const skip = (pageNum - 1) * limitNum;
-
-    // Execute query with pagination and populate author
     const posts = await Post.find(filter)
-      .populate('author', 'name email')
+      .populate('author', 'name')
       .sort(sortObj)
       .skip(skip)
       .limit(limitNum)
       .lean();
 
-    // Get total count for pagination
     const total = await Post.countDocuments(filter);
 
-    // Compute hasVoted for authenticated users with a single query
+    // hasVoted: ONE query for all posts on this page, then a Set lookup
+    let votedPostIds = new Set();
     if (req.user) {
-      const postIds = posts.map((p) => p._id);
       const votes = await Vote.find({
         user: req.user._id,
-        post: { $in: postIds },
+        post: { $in: posts.map((p) => p._id) },
       }).lean();
-
-      const votedPostIds = new Set(votes.map((v) => v.post.toString()));
-
-      posts.forEach((post) => {
-        post.hasVoted = votedPostIds.has(post._id.toString());
-      });
+      votedPostIds = new Set(votes.map((v) => v.post.toString()));
     }
 
-    const pages = Math.ceil(total / limitNum);
+    posts.forEach((post) => {
+      post.hasVoted = votedPostIds.has(post._id.toString());
+    });
 
     res.json({
       success: true,
       posts,
       page: pageNum,
-      pages,
+      pages: Math.ceil(total / limitNum),
       total,
     });
   } catch (error) {
@@ -113,23 +95,22 @@ exports.getPosts = async (req, res, next) => {
   }
 };
 
-// GET /api/posts/:id - Get single post with hasVoted
+// GET /api/posts/:id - single post with hasVoted
 exports.getPost = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id).populate('author', 'name email');
+    // .lean() returns a plain object, so the extra hasVoted field is kept in the JSON
+    const post = await Post.findById(req.params.id).populate('author', 'name').lean();
 
     if (!post) {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
-    // Compute hasVoted if user is authenticated
+    let hasVoted = false;
     if (req.user) {
-      const vote = await Vote.findOne({
-        user: req.user._id,
-        post: req.params.id,
-      }).lean();
-      post.hasVoted = !!vote;
+      const vote = await Vote.findOne({ user: req.user._id, post: post._id }).lean();
+      hasVoted = !!vote;
     }
+    post.hasVoted = hasVoted;
 
     res.json({ success: true, post });
   } catch (error) {
@@ -137,9 +118,10 @@ exports.getPost = async (req, res, next) => {
   }
 };
 
-// POST /api/posts - Create a new post
+// POST /api/posts - create a post
 exports.createPost = async (req, res, next) => {
   try {
+    // Pick only the allowed fields so users can't set status, voteCount, adminReply, etc.
     const { title, description, category } = req.body;
 
     const post = new Post({
@@ -152,7 +134,7 @@ exports.createPost = async (req, res, next) => {
     });
 
     await post.save();
-    await post.populate('author', 'name email');
+    await post.populate('author', 'name');
 
     res.status(201).json({ success: true, post });
   } catch (error) {
@@ -160,7 +142,7 @@ exports.createPost = async (req, res, next) => {
   }
 };
 
-// PUT /api/posts/:id - Update a post (author only)
+// PUT /api/posts/:id - update a post (author only)
 exports.updatePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -169,7 +151,6 @@ exports.updatePost = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
-    // Check if user is the author
     if (post.author.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -177,14 +158,14 @@ exports.updatePost = async (req, res, next) => {
       });
     }
 
-    // Update only title, description, category
+    // Only these three fields can be edited
     const { title, description, category } = req.body;
     post.title = title;
     post.description = description;
     post.category = category;
 
     await post.save();
-    await post.populate('author', 'name email');
+    await post.populate('author', 'name');
 
     res.json({ success: true, post });
   } catch (error) {
@@ -192,7 +173,7 @@ exports.updatePost = async (req, res, next) => {
   }
 };
 
-// DELETE /api/posts/:id - Delete a post (author or admin)
+// DELETE /api/posts/:id - delete a post (author or admin)
 exports.deletePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -201,7 +182,6 @@ exports.deletePost = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
-    // Check if user is author or admin
     const isAuthor = post.author.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
 
@@ -212,11 +192,9 @@ exports.deletePost = async (req, res, next) => {
       });
     }
 
-    // Delete all votes for this post
-    await Vote.deleteMany({ post: req.params.id });
-
-    // Delete post
-    await Post.findByIdAndDelete(req.params.id);
+    // Remove this post's votes first so no orphaned Vote documents are left behind
+    await Vote.deleteMany({ post: post._id });
+    await post.deleteOne();
 
     res.json({ success: true, message: 'Post deleted' });
   } catch (error) {
@@ -224,7 +202,7 @@ exports.deletePost = async (req, res, next) => {
   }
 };
 
-// PATCH /api/posts/:id/status - Update post status and adminReply (admin only)
+// PATCH /api/posts/:id/status - change status and optional admin reply (admin only)
 exports.updateStatus = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -235,18 +213,15 @@ exports.updateStatus = async (req, res, next) => {
 
     const { status, adminReply } = req.body;
 
-    // Update status
     if (status) {
       post.status = status;
     }
-
-    // Optionally update adminReply
     if (adminReply !== undefined) {
       post.adminReply = adminReply;
     }
 
     await post.save();
-    await post.populate('author', 'name email');
+    await post.populate('author', 'name');
 
     res.json({ success: true, post });
   } catch (error) {
@@ -254,7 +229,7 @@ exports.updateStatus = async (req, res, next) => {
   }
 };
 
-// GET /api/roadmap - Get roadmap grouped by status
+// GET /api/roadmap - posts grouped by status; "open" posts are not included
 exports.getRoadmap = async (req, res, next) => {
   try {
     const posts = await Post.find({
@@ -264,7 +239,6 @@ exports.getRoadmap = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Group by status
     const roadmap = {
       planned: posts.filter((p) => p.status === 'planned'),
       inProgress: posts.filter((p) => p.status === 'in-progress'),
