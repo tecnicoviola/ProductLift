@@ -110,7 +110,7 @@ The backend follows a **routes → controllers → services → models** layerin
 
 ## Architecture and Design
 
-The system design is documented with UML and architecture diagrams in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): system architecture, use cases, ER diagram, class diagram, sequence diagrams (login, voting, admin status update), the post status lifecycle and the main design decisions.
+The system design is documented with UML and architecture diagrams [`docs/ARCHITECTURE.md`] system architecture, use cases, ER diagram, class diagram, sequence diagrams (login, voting, admin status update), the post status lifecycle and the main design decisions.
 
 ```mermaid
 flowchart LR
