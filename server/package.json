@@ -4,9 +4,14 @@
   "description": "Backend for FeedbackBoard, a feedback and roadmap board",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "seed": "node utils/seed.js"
+    "start": "node ./node_modules/tsx/dist/cli.mjs ./src/server.ts",
+    "dev": "node ./node_modules/tsx/dist/cli.mjs watch ./src/server.ts",
+    "seed": "node ./node_modules/tsx/dist/cli.mjs ./src/utils/seed.ts",
+    "dev:ts": "node ./node_modules/tsx/dist/cli.mjs watch ./src/server.ts",
+    "start:ts": "tsx src/server.ts",
+    "seed:ts": "tsx src/utils/seed.ts",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "build": "node ./node_modules/typescript/bin/tsc"
   },
   "keywords": [],
   "author": "",
@@ -19,8 +24,20 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.7.1",
     "express-validator": "^7.0.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.0.3"
+    "mongoose": "^7.0.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
